@@ -1,6 +1,6 @@
 # art-of-reacting
 
-A deliberately-simple full-stack demo built to teach **Docker packaging** and **AWS deployment** with sound engineering practices. Feature richness is explicitly **not** a goal — the deployment story and engineering discipline are the artifacts.
+A deliberately-simple full-stack demo built to demonstrate **Docker packaging** and **AWS deployment** with sound engineering practices. Feature richness is explicitly **not** a goal — the deployment story and engineering discipline are the artifacts.
 
 ## What it does
 

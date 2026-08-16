@@ -42,10 +42,10 @@ replay_pid*
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.properties.bak
 
-# Ignore built jars/wars, but keep the Maven wrapper jar
+# Ignore built jars/wars, but keep the Maven wrapper jar (at any depth)
 *.jar
 *.war
-!.mvn/wrapper/maven-wrapper.jar
+!**/.mvn/wrapper/maven-wrapper.jar
 
 # ---------- Docker ----------
 # (nothing to ignore yet)

@@ -26,3 +26,7 @@ See [`../docs/architecture.md`](../docs/architecture.md#rest-api-design) for the
 ## Storage
 
 `ConcurrentHashMap<UUID, User>` behind a `UserRepository` interface. **Data is lost on restart.** This is intentional — see [ADR-0001](../docs/adr/0001-deliberately-simple-v1.md).
+
+## Postman collection
+
+`postman/artofreacting-api.postman_collection.json` — importable Postman collection with the two REST endpoints. Set the `baseUrl` collection variable to point at your target environment (default `http://localhost:8080`).
