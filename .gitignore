@@ -1,0 +1,61 @@
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Editors / IDEs ----------
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---------- Env / secrets ----------
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ---------- Logs ----------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------- Node / React (artofreacting/) ----------
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+.eslintcache
+*.tsbuildinfo
+
+# ---------- Java / Maven (artofreacting-api/) ----------
+target/
+*.class
+hs_err_pid*
+replay_pid*
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties.bak
+
+# Ignore built jars/wars, but keep the Maven wrapper jar
+*.jar
+*.war
+!.mvn/wrapper/maven-wrapper.jar
+
+# ---------- Docker ----------
+# (nothing to ignore yet)
+
+# ---------- Terraform (Phase 5+) ----------
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!example.tfvars
+
+# ---------- AWS ----------
+.aws-sam/
