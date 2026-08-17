@@ -184,8 +184,8 @@ Deployment shape is codified as a **runbook** (`docs/runbook/`) — no Terraform
 ## Phase status
 
 - [x] **Phase 0** — Foundation
-- [ ] **Phase 1** — Spring Boot API
-- [ ] **Phase 2** — React frontend
+- [x] **Phase 1** — Spring Boot API
+- [ ] **Phase 2** — React frontend (implemented, under review)
 - [ ] **Phase 3** — Dockerfiles + docker-compose
 - [ ] **Phase 4** — AWS deployment (runbook)
 - [ ] **Phase 5** — CI/CD, then Terraform

@@ -63,12 +63,29 @@ AWS region **`eu-west-1`** (Ireland).
 ## Phase status
 
 - [x] **Phase 0** — Foundation: repo scaffold, docs, `.gitignore`, `CLAUDE.md`
-- [ ] **Phase 1** — Spring Boot API (endpoints, in-memory repo, tests)
-- [ ] **Phase 2** — React frontend (register form, user list, Vite proxy)
+- [x] **Phase 1** — Spring Boot API (endpoints, in-memory repo, tests)
+- [ ] **Phase 2** — React frontend (register form, user list, Vite proxy) — implemented, under review
 - [ ] **Phase 3** — Dockerfiles + `docker-compose.yml`
 - [ ] **Phase 4** — AWS deployment via documented runbook
 - [ ] **Phase 5** — CI/CD, then Terraform
 
 ## Local development
 
-Not yet available — arrives in Phase 1 (API) and Phase 2 (frontend). See [`docs/architecture.md`](./docs/architecture.md#local-development) for the planned workflow.
+Two independent processes, each hot-reloading. The browser only ever talks to `:5173`; Vite proxies `/api/*` to the API.
+
+```powershell
+# Terminal 1 — API on :8080
+cd artofreacting-api ; .\mvnw spring-boot:run
+
+# Terminal 2 — frontend on :5173
+cd artofreacting ; npm install ; npm run dev
+```
+
+Tests:
+
+```powershell
+cd artofreacting-api ; .\mvnw test
+cd artofreacting ; npm test
+```
+
+See [`docs/architecture.md`](./docs/architecture.md#local-development) for the reasoning.
