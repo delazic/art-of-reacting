@@ -1,0 +1,47 @@
+# A parity check for the packaging that ships to AWS — NOT the development inner
+# loop. There is no hot reload here; normal development stays on the Windows host
+# (`./mvnw spring-boot:run` + `npm run dev`). Rebuild after changing code.
+#
+# The reference environment runs Docker Engine in a Docker Machine VirtualBox VM,
+# so the Docker CLI needs pointing at it first, per shell:
+#
+#   docker-machine env default --shell powershell | Invoke-Expression
+#   docker compose up --build
+#
+# See docs/architecture.md#docker-machine--virtualbox-on-windows
+
+name: art-of-reacting
+
+services:
+  api:
+    build: ./artofreacting-api
+    image: artofreacting-api:local
+    # No `ports:` on purpose. The API is reachable only from inside the compose
+    # network, exactly as on AWS, so the browser cannot bypass the proxy and
+    # there is no CORS to configure. Its healthcheck comes from the image, so
+    # it is identical here and on EC2 in Phase 4.
+    restart: unless-stopped
+
+  web:
+    build: ./artofreacting
+    image: artofreacting-web:local
+    # The published port binds inside the VM, not on Windows. Port 80 is used so
+    # that the environment's existing VirtualBox NAT rule (127.0.0.1:80 -> VM:80)
+    # makes this reachable from Windows at http://localhost/ as well as directly
+    # at http://<docker-machine ip default>/ on the host-only adapter.
+    ports:
+      - "80:80"
+    # Waits for `api`'s image HEALTHCHECK to pass rather than merely for its
+    # container to exist: nginx aborts at startup if proxy_pass cannot resolve
+    # its upstream, and this also avoids serving 502s during Spring Boot's boot.
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Deliberately no `volumes:` anywhere. Beyond compose being a parity check rather
+# than a hot-reload loop, a bind mount of this repository could not work in the
+# reference environment at all — see the architecture doc section linked above.
+#
+# Deliberately no `networks:` either: compose's default bridge network already
+# provides the DNS name `api` that nginx.conf proxies to.

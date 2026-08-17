@@ -1,0 +1,20 @@
+# The build context is tarred and uploaded to the Docker daemon, which in the
+# reference environment lives in a VirtualBox VM across a TLS connection — so
+# context size costs time on every single build. target/ alone is ~23 MB of it.
+# See docs/architecture.md#docker-machine--virtualbox-on-windows
+target/
+
+# The image builds with the Maven image, not the wrapper — see the Dockerfile.
+.mvn/
+mvnw
+mvnw.cmd
+
+# Not used by the image build.
+postman/
+README.md
+.gitignore
+
+# Editors / IDEs
+.idea/
+*.iml
+.vscode/

@@ -40,7 +40,7 @@ Open the **frontend** URL, not the API's. `http://localhost:8080/api/users` retu
 
 Without the API running, the page still loads and shows "Could not reach the API." with a **Try again** button.
 
-`npm run preview` (<http://localhost:4173>) serves the built bundle but has **no** `/api` proxy — the dev proxy is a dev-server feature. To exercise a production build against the API, use `docker compose up --build` from the repository root and open <http://localhost:3000>.
+`npm run preview` (<http://localhost:4173>) serves the built bundle but has **no** `/api` proxy — the dev proxy is a dev-server feature. To exercise a production build against the API, use `docker compose up --build` from the repository root and open <http://localhost/> (see the [root README](../README.md#both-apps-in-containers) — the Docker CLI needs the Docker Machine environment first).
 
 ## Surface
 
@@ -59,6 +59,14 @@ Do not introduce a `VITE_API_URL` environment variable.
 
 Errors come back as `{ "error": "CODE", "message": "..." }`; `src/api.ts` turns those into an `ApiError` and the UI shows the server's `message` verbatim — the API is the authority on validation (3–50 characters) and uniqueness (case-insensitive).
 
+## Container image
+
+Two stages: `node:22-alpine` runs `npm ci` then `npm run build`, and `nginx:alpine` serves the resulting `dist/`. Because `npm run build` typechecks first, a type error fails the image build rather than shipping an unchecked bundle.
+
+`nginx.conf` is what makes the relative `/api/*` paths work outside dev — it proxies them to `api:8080`, the compose service name. That hostname resolves only on the compose network, so the image is not runnable on its own; use `docker compose up --build` from the repository root.
+
+Node 22 rather than 20 because Vite 8 requires `^20.19.0 || >=22.12.0` and Node 20 is end-of-life.
+
 ## Layout
 
 ```
@@ -67,6 +75,9 @@ artofreacting/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts            # dev proxy + Vitest config
+├── Dockerfile                # node:22-alpine build → nginx:alpine runtime
+├── nginx.conf                # SPA serving + /api/* → api:8080 (container only)
+├── .dockerignore             # keeps node_modules out of the build context
 └── src/
     ├── main.tsx              # mounts App
     ├── App.tsx               # load / register / order state

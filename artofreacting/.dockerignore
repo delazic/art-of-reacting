@@ -1,0 +1,25 @@
+# The build context is tarred and uploaded to the Docker daemon, which in the
+# reference environment lives in a VirtualBox VM across a TLS connection — so
+# context size costs time on every single build. node_modules is ~84 MB of an
+# ~85 MB context, and `npm ci` recreates it inside the image anyway.
+# See docs/architecture.md#docker-machine--virtualbox-on-windows
+node_modules/
+
+# Build output. The image produces its own dist/ in the builder stage; copying a
+# Windows-built one in would defeat the point of building in the image.
+dist/
+
+# Local tooling output.
+coverage/
+.vite/
+*.tsbuildinfo
+*.log
+
+# Not used by the image build. Note that nginx.conf IS used — do not add it.
+README.md
+.gitignore
+
+# Editors / IDEs
+.idea/
+*.iml
+.vscode/
