@@ -26,13 +26,21 @@ npm run build      # typecheck + production bundle into dist/
 npm run preview    # serve the built bundle
 ```
 
-The dev server expects the API on `http://localhost:8080`:
+## Opening it in a browser
+
+Start the API first — the dev server expects it on `http://localhost:8080`:
 
 ```powershell
 cd ..\artofreacting-api ; .\mvnw spring-boot:run
 ```
 
-Without the API running, the page loads and shows "Could not reach the API." with a **Try again** button.
+Then, with `npm run dev` running, open <http://localhost:5173>.
+
+Open the **frontend** URL, not the API's. `http://localhost:8080/api/users` returns raw JSON and `http://localhost:8080/` returns 404 — the API serves no pages. The page you load at `:5173` fetches `/api/users` from `:5173`, and Vite forwards it. Same shape in every other environment; see the table in the [root README](../README.md#opening-the-app-in-a-browser).
+
+Without the API running, the page still loads and shows "Could not reach the API." with a **Try again** button.
+
+`npm run preview` (<http://localhost:4173>) serves the built bundle but has **no** `/api` proxy — the dev proxy is a dev-server feature. To exercise a production build against the API, use `docker compose up --build` from the repository root and open <http://localhost:3000>.
 
 ## Surface
 
