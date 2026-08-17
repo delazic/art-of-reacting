@@ -52,6 +52,20 @@ The `-replace` matters: a `\r\n` in a shell script reaches bash as a literal car
 
 **[laptop]** `t3.small` (2 GB RAM), not `t3.micro`: the Maven build runs *on this box*, and 1 GB is not reliably enough for `mvn package` plus a container pull. Step 12 downsizes it once the image is in ECR. 16 GB of gp3 leaves room for the builder image, the Maven cache, and the final image.
 
+The block device mapping goes in a file rather than inline. **PowerShell has no backslash escaping**, so an inline `"[{\"DeviceName\":…}]"` reaches the CLI with literal backslashes and fails with `Invalid JSON`. A `file://` reference sidesteps shell quoting entirely, the same way the IAM policies do.
+
+```powershell
+@'
+[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":16,"VolumeType":"gp3","DeleteOnTermination":true}}]
+'@ | Out-File -Encoding ascii block-device-mappings.json
+
+# Confirm the prerequisites are actually populated before launching
+"AMI:     $AmiId"
+"SG:      $SgId"
+"Region:  $Region"
+Test-Path user-data.sh, block-device-mappings.json
+```
+
 ```powershell
 # MUTATES: launches one EC2 instance
 $InstanceId = aws ec2 run-instances `
@@ -60,7 +74,7 @@ $InstanceId = aws ec2 run-instances `
   --key-name artofreacting-key `
   --security-group-ids $SgId `
   --iam-instance-profile Name=artofreacting-ec2-profile `
-  --block-device-mappings "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":16,\"VolumeType\":\"gp3\",\"DeleteOnTermination\":true}}]" `
+  --block-device-mappings file://block-device-mappings.json `
   --user-data file://user-data.sh `
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=artofreacting-api}]" `
   --region $Region --query "Instances[0].InstanceId" --output text
@@ -69,7 +83,12 @@ $InstanceId
 aws ec2 wait instance-running --instance-ids $InstanceId --region $Region
 ```
 
-If `run-instances` fails with an invalid instance-profile error, IAM has not finished propagating — wait a few seconds and retry the same command.
+`--tag-specifications` needs no file: it uses the CLI's shorthand syntax, which contains no quotes for PowerShell to mangle.
+
+Two failures worth recognising:
+
+- **`ParamValidation` / `Invalid JSON`** — a client-side rejection. Nothing was launched, nothing is billing; fix the argument and re-run.
+- **Invalid instance-profile** — IAM has not finished propagating. Wait a few seconds and retry the identical command.
 
 ## Step 4 — Allocate and associate the Elastic IP
 
