@@ -167,9 +167,9 @@ Region: **`eu-west-1`** (Ireland).
 
 Components:
 
-- **1× EC2** (`t3.micro` or `t3.small`) in the default VPC. User-data installs Docker, logs into ECR, runs the API container with `--restart=unless-stopped`. Elastic IP for a stable address.
+- **1× EC2** (`t3.small` for v1, downsizable to `t3.micro`) in the default VPC. User-data installs Docker and git; the API container is started by the runbook with `--restart=unless-stopped`. Elastic IP for a stable address. In v1 this instance is **also the image build host** — see below.
 - **1× ECR** private repo for the API image.
-- **1× IAM instance profile** with `AmazonEC2ContainerRegistryReadOnly` (so `docker pull` needs no static creds).
+- **1× IAM instance profile** with pull-only ECR permissions (so `docker pull` needs no static creds). It deliberately has **no push permissions** — see below.
 - **1× S3 bucket** for the frontend static bundle, private, accessed only via CloudFront OAC.
 - **1× CloudFront distribution** with two behaviors:
   - `/api/*` → EC2 origin (HTTPS viewer, HTTP origin)
@@ -178,6 +178,25 @@ Components:
 **Fallback** (if S3+CloudFront setup slips): serve the frontend nginx container from the same EC2, reverse-proxying `/api` to the API container. Lose HTTPS and the CDN; still get public URLs quickly.
 
 Deployment shape is codified as a **runbook** (`docs/runbook/`) — no Terraform in v1.
+
+### Image build host: EC2, not the laptop (v1)
+
+The API image is built **on the EC2 instance**, not on a developer laptop. This is a deliberate v1 concession to the local environment described in [Known limitation](#known-limitation-phase-3-runtime-verification): building the image requires running `mvn package` inside a Java 21 container, and the local Docker engine cannot run Java 21 containers at all. So `docker build` fails locally before a push is even possible.
+
+The instance therefore has two roles in v1: build host and runtime host. That is a known compromise, not a target state — Phase 5 moves the build to CI, after which the instance is runtime-only.
+
+**The Dockerfiles are unchanged for this.** The same committed multi-stage `artofreacting-api/Dockerfile` is what EC2 builds; nothing about the image is specific to the build host.
+
+**Push credentials are separated from the instance's runtime identity.** The instance profile is pull-only and never gains push rights. Instead, the operator mints a short-lived ECR authorization token with **their own** AWS identity and uses it to `docker login` on the instance for the push:
+
+| Operation | Identity | Permissions | Lifetime |
+| --------- | -------- | ----------- | -------- |
+| `docker push` (build step, operator-driven) | operator's own AWS credentials, via `aws ecr get-login-password` run on the laptop | whatever the operator already has | token expires in 12 hours |
+| `docker pull` (runtime, unattended) | EC2 instance profile | ECR read-only, scoped to this repository | rotated automatically by IMDS |
+
+This works because an ECR authorization token carries the permissions of the identity that requested it, so the push privilege never has to exist on the instance. The result is that the locked pull-only IAM design survives intact: no push policy on the instance profile, no IAM user, and no static access keys anywhere. The cost is one manual copy of a token per build, which Phase 5 removes.
+
+The frontend image is **not used on AWS** in the preferred path — the SPA is a static bundle in S3. `artofreacting/Dockerfile` exists for local compose parity and for the EC2 fallback above.
 
 ## Testing approach
 
@@ -216,10 +235,10 @@ Deployment shape is codified as a **runbook** (`docs/runbook/`) — no Terraform
 
 1. Both apps run locally (`./mvnw spring-boot:run` + `npm run dev`) with Vite proxy wired
 2. Each app has a Dockerfile; `docker compose up` brings both up locally
-3. AWS baselines: IAM role/instance profile, ECR repo, EC2 key pair
-4. First `docker push` of API image to ECR (manual, from a laptop)
-5. Launch EC2, attach EIP, user-data pulls image and runs it; verify `http://<eip>/api/users`
-6. Create S3 bucket, upload built frontend, create CloudFront with two behaviors; verify SPA loads and `/api/*` reaches EC2
+3. AWS baselines: ECR repo, IAM role/instance profile (pull-only), key pair, security group — [`runbook/aws-baseline.md`](./runbook/aws-baseline.md)
+4. Launch EC2 + Elastic IP; user-data installs Docker and git — [`runbook/deploy-api.md`](./runbook/deploy-api.md)
+5. On that instance: get the source, `docker build`, `docker push` to ECR with an operator-minted token, then `docker pull` back through the instance profile and run it; verify `http://<eip>/api/users`
+6. Create S3 bucket, upload built frontend, create CloudFront with OAC and two behaviors; verify SPA loads and `/api/*` reaches EC2 — [`runbook/deploy-frontend.md`](./runbook/deploy-frontend.md)
 7. (Phase 5) Add GitHub Actions for build/push/deploy; add Terraform once topology stops changing
 8. (Later) Add a domain, ACM cert, Route 53
 
@@ -229,5 +248,5 @@ Deployment shape is codified as a **runbook** (`docs/runbook/`) — no Terraform
 - [x] **Phase 1** — Spring Boot API
 - [x] **Phase 2** — React frontend
 - [x] **Phase 3** — Dockerfiles + docker-compose (statically validated; local runtime verification blocked — see [Known limitation](#known-limitation-phase-3-runtime-verification))
-- [ ] **Phase 4** — AWS deployment (runbook)
+- [ ] **Phase 4** — AWS deployment ([runbooks](./runbook/) written; not yet executed against AWS)
 - [ ] **Phase 5** — CI/CD, then Terraform

@@ -69,7 +69,7 @@ AWS region **`eu-west-1`** (Ireland).
 - [x] **Phase 1** — Spring Boot API (endpoints, in-memory repo, tests)
 - [x] **Phase 2** — React frontend (register form, user list, Vite proxy)
 - [x] **Phase 3** — Dockerfiles + `docker-compose.yml` — statically validated; local runtime verification blocked by an obsolete local Docker engine, see [known limitation](./docs/architecture.md#known-limitation-phase-3-runtime-verification)
-- [ ] **Phase 4** — AWS deployment via documented runbook
+- [ ] **Phase 4** — AWS deployment via documented runbook — [runbooks](./docs/runbook/) written; not yet executed against AWS
 - [ ] **Phase 5** — CI/CD, then Terraform
 
 ## Opening the app in a browser
@@ -126,7 +126,7 @@ The published port binds inside the VM rather than on Windows, so `localhost` wo
 
 ### On AWS (from Phase 4)
 
-The browser URL is an output of deployment, not something configured in the app. Once the runbooks exist, retrieve it with:
+The browser URL is an output of deployment, not something configured in the app. Follow [`docs/runbook/`](./docs/runbook/) in order — `aws-baseline.md`, `deploy-api.md`, `deploy-frontend.md` — then retrieve the URL with:
 
 ```powershell
 # Preferred: the CloudFront domain (serves the SPA and proxies /api/* to EC2)
